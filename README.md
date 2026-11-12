@@ -1,4 +1,6 @@
-# dev-task
+<p align="center">
+  <img src="assets/banner.png" alt="dev-task" width="720">
+</p>
 
 Skill para o Claude que conduz o desenvolvimento de uma tarefa (feature ou bug) num projeto existente, do entendimento até o código pronto para review. Funciona com qualquer stack: os comandos de build, lint e testes são descobertos no próprio projeto.
 
