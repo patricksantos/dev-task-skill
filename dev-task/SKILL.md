@@ -1,6 +1,6 @@
 ---
 name: dev-task
-description: Fluxo completo para desenvolver uma tarefa (feature ou bug) num projeto existente: entender, investigar, planejar, implementar, testar com Maestro, revisar e documentar para o review. Usar ao receber uma nova tarefa de desenvolvimento.
+description: Conduz uma tarefa de desenvolvimento (feature ou bug) do entendimento ao código pronto para review, com plano aprovado, teste no Maestro e code review. Usar ao receber uma nova tarefa.
 ---
 
 # Dev Task
