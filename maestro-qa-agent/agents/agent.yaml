@@ -1,0 +1,4 @@
+interface:
+  display_name: "QA E2E com Maestro MCP e Painel"
+  short_description: "Aponte o dashboard a um app Flutter, valide o YAML e execute a suíte"
+  default_prompt: "Use o Maestro MCP para explorar o fluxo e gravar o YAML em .maestro/flows. Antes de uma suíte real, aponte o Maestro QA Dashboard ao app com MAESTRO_REPO e confirme projectName, appId e driver em /api/prerequisites. Execute só um id de catalog.suites no modo script, acompanhe até o status final e confira o JUnit."
