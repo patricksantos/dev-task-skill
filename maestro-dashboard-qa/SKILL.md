@@ -1,11 +1,13 @@
 ---
 name: maestro-dashboard-qa
-description: Explora telas com o Maestro MCP, grava fluxos YAML e executa suítes no Maestro QA Dashboard. Use para testar um app Flutter ou site com Maestro, apontar o dashboard a outro repositório com MAESTRO_REPO, acompanhar logs e consultar JUnit. Não serve para implementar o produto nem para QA sem Maestro.
+description: Cria e mantém a suíte E2E de um app Flutter ou site com o Maestro MCP e o Maestro QA Dashboard. Usar quando pedirem para criar ou manter a suíte. Não serve para validar uma tarefa da dev-task.
 ---
 
 # Testes E2E com Maestro e o Painel QA
 
-Siga o ciclo: entender o app, inspecionar a tela, gravar o YAML, validar o fluxo e, quando a suíte existir, executá-la pelo dashboard. O contrato HTTP, as variáveis e o julgamento do resultado estão no `README.md` deste repositório. Não invente rotas.
+Use esta skill só quando o usuário pedir para criar, manter ou executar a suíte de regressão do app. Ela não faz parte da skill dev-task: os testes da fase 6 da dev-task usam flows descartáveis e não passam por aqui.
+
+Siga o ciclo: entender o app, inspecionar a tela, gravar o YAML, validar o fluxo e, quando a suíte existir, executá-la pelo dashboard. As rotas, as variáveis e o julgamento do resultado estão descritos abaixo. Para qualquer outra rota, consulte o `README.md` do Maestro QA Dashboard. Não invente rotas.
 
 O dashboard não compila nem instala o Flutter. Sem um `MAESTRO_REPO` absoluto, nenhum app é selecionado. Confirme `projectName`, `appId` e `driver` antes de uma execução real. Não controle o mesmo dispositivo ao mesmo tempo por MCP, CLI e dashboard.
 
@@ -15,7 +17,7 @@ O dashboard não compila nem instala o Flutter. Sem um `MAESTRO_REPO` absoluto, 
 2. Suba o dashboard com o caminho absoluto do app. Variável ausente, relativa ou com metacaractere de shell não seleciona app nenhum. Trocar o alvo exige reiniciar o processo.
 
 ```bash
-cd <raiz-deste-dashboard>
+cd <raiz-do-maestro-qa-dashboard>
 MAESTRO_REPO=/caminho/absoluto/do-app \
 MAESTRO_PROJECT_NAME="Nome do app" \
 MAESTRO_APP_ID=com.exemplo.app \
@@ -38,15 +40,15 @@ Pare se `ready` não for `true`, se `projectName` ou `appId` não forem o app pe
 
 ## 2. Entender o alvo e as ferramentas
 
-1. Leia o README do app e o deste dashboard. Identifique ambiente, `appId`, suíte e limites. `dev`, localhost ou uma resposta HTTP não tornam o alvo seguro.
+1. Leia o README do app e o do Maestro QA Dashboard. Identifique ambiente, `appId`, suíte e limites. `dev`, localhost ou uma resposta HTTP não tornam o alvo seguro.
 2. Para Maestro MCP local, use `list_devices` antes de `inspect_screen`, `take_screenshot` ou `run`. Use só um `device_id` retornado. Em site, use o dispositivo Chromium retornado.
-3. Antes de um comando Maestro pouco familiar, consulte `cheat_sheet`. Para resultado de suíte, use a interface ou as rotas GET do README. Não envie credenciais.
+3. Antes de um comando Maestro pouco familiar, consulte `cheat_sheet`. Para resultado de suíte, use a interface ou as rotas GET da seção 5. Não envie credenciais.
 
 ## 3. Explorar com o Maestro MCP
 
 1. Inspecione a tela atual. Capture screenshot só quando a imagem ajudar. Reinspecione depois de cada mudança relevante.
 2. Copie o texto da hierarquia. `accessibilityText` pode orientar um seletor `text:`, mas não é a chave. Prefira id estável; sem id, use o texto completo observado. Não copie refs temporários para o YAML.
-3. Não faça login, compra, resgate, alteração de conta ou ação destrutiva sem autorização explícita e dados de teste.
+3. Não faça login, compra, transação, alteração de conta ou ação destrutiva sem autorização explícita e dados de teste.
 
 ## 4. Escrever e validar o YAML
 
@@ -76,9 +78,9 @@ curl -sS -X POST http://127.0.0.1:4310/api/runs \
 
 `ready` cobre Maestro, fluxos ou scripts, e dispositivo. A checagem `hml` é alerta: uma resposta HTTP, inclusive `200`, `403` ou `404`, não prova VPN nem ambiente seguro. Sem `MAESTRO_API_URL`, essa checagem não bloqueia.
 
-- Não altere endpoints, feature flags, dados, Keychain ou configuração para fazer o teste passar.
+- Não altere endpoints, feature flags, dados, credenciais armazenadas (Keychain, Keystore) ou configuração para fazer o teste passar.
 - Não encerre processos, reinicie ou apague simuladores, nem limpe dados sem autorização explícita.
-- Não use credenciais pessoais, nem execute compras, resgates, transações ou mudanças cadastrais.
+- Não use credenciais pessoais, nem execute compras, transações ou mudanças cadastrais.
 - Não faça operações Git de escrita, não publique e não crie commits.
 
 ## 7. Relatar o resultado

@@ -6,6 +6,8 @@ Skill para o Claude que conduz o desenvolvimento de uma tarefa (feature ou bug) 
 
 Em vez de sair escrevendo código, o Claude segue um roteiro: entende a tarefa, pergunta o que estiver ambíguo, apresenta um plano, espera sua aprovação e só então implementa, testa e revisa.
 
+O repositório também traz a skill [`maestro-dashboard-qa`](#skill-maestro-dashboard-qa), para testes E2E com o Maestro QA Dashboard.
+
 ## Como funciona
 
 | Fase | O que acontece |
@@ -102,6 +104,20 @@ rm -rf ~/.claude/skills/dev-task
 ## Personalizar
 
 As diretrizes do projeto (`CLAUDE.md` / `AGENTS.md`) têm prioridade sobre a skill. Por isso, o jeito mais simples de adaptar o fluxo ao seu time é registrar ali os comandos, padrões e convenções do projeto. Para mudar o fluxo em si, faça um fork e edite `dev-task/SKILL.md`.
+
+## Skill maestro-dashboard-qa
+
+Explora telas com o Maestro MCP, grava os fluxos YAML em `.maestro/flows/` do app e executa as suítes pelo Maestro QA Dashboard, conferindo o resultado pelo JUnit. Não faz commit, compra, transação nem ação destrutiva sem autorização.
+
+As duas skills são independentes: a dev-task valida cada entrega com flows descartáveis, e a maestro-dashboard-qa cuida da suíte de regressão permanente, só quando você pedir.
+
+Requisitos: Maestro QA Dashboard rodando localmente, Maestro MCP configurado e um emulador, simulador ou dispositivo com o app instalado.
+
+Instalação no Claude Code:
+
+```bash
+npx skills add patricksantos/dev-task-skill --skill maestro-dashboard-qa -a claude-code -g
+```
 
 ## Licença
 
