@@ -1,0 +1,7 @@
+Running on iPhone 16 Plus - iOS 18.5 - 11111111-1111-4111-8111-111111111111
+ > Flow home
+Launch app "com.example.app"... COMPLETED
+ > Flow home_to_stores
+Tap on "Lojas"... COMPLETED
+ > Flow home_to_coupons
+Assert that "Cupons" is visible

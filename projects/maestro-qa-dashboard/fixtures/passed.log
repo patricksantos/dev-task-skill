@@ -1,0 +1,16 @@
+Running on iPhone 16 Plus - iOS 18.5 - 11111111-1111-4111-8111-111111111111
+ > Flow listing
+Launch app "com.example.app"... COMPLETED
+Assert that "Restaurantes" is visible... COMPLETED
+ > Flow search
+Launch app "com.example.app"... COMPLETED
+Assert that "Busca" is visible... COMPLETED
+ > Flow views
+Launch app "com.example.app"... COMPLETED
+Assert that "Mapa" is visible... COMPLETED
+ > Flow state
+Launch app "com.example.app"... COMPLETED
+Assert that "Estado" is visible... COMPLETED
+ > Flow details
+Launch app "com.example.app"... COMPLETED
+Assert that "Detalhe" is visible... COMPLETED

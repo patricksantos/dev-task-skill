@@ -1,0 +1,26 @@
+{
+  "name": "maestro-qa-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs --dev",
+    "build": "NEXT_DIST_DIR=.next-prod next build",
+    "start": "NODE_ENV=production NEXT_DIST_DIR=.next-prod node server.mjs",
+    "test": "tsx --test src/config.test.ts src/sanitize/sanitize.test.ts src/parser/maestro-parser.test.ts src/junit/junit-report.test.ts src/catalog/catalog.test.ts src/prerequisites/prerequisites.test.ts src/runner/line-buffer.test.ts src/runner/reconcile.test.ts src/runner/fixtures.test.ts src/runner/run-manager.test.ts src/components/view-model.test.ts src/components/panels.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^5.3.0",
+    "next": "^15.5.6",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.1",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,18 @@
+Running on iPhone 16 Plus - iOS 18.5 - 11111111-1111-4111-8111-111111111111
+Waiting for flows to complete...
+ > Flow home
+Launch app "com.example.app"... COMPLETED
+[32mAssert that "Início" is visible...[0m COMPLETED
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyIn0.signaturevaluehere
+ > Flow home_to_stores
+Launch app "com.example.app"... COMPLETED
+Tap on "Lojas"... COMPLETED
+Assert that "Restaurantes" is visible... COMPLETED
+ > Flow home_to_coupons
+Launch app "com.example.app"... COMPLETED
+Assert that "Cupons" is visible... FAILED
+Element not found: Text matching regex: Cupons
+[Failed] home_to_coupons
+ > Flow return_home
+Launch app "com.example.app"... COMPLETED
+Assert that "Início" is visible... COMPLETED
