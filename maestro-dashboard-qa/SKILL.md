@@ -30,7 +30,7 @@ O dashboard fica em `<pasta>/maestro-dashboard-qa/maestro-qa-dashboard`.
 ## 1. Apontar o dashboard ao app
 
 1. Confirme que o app de debug está instalado no simulador ou emulador e que os fluxos estão em `.maestro/flows/<suíte>/*.yaml`, com `appId`. O nome da pasta vira o id da suíte: letra minúscula inicial, só `a-z`, `0-9`, `_` e `-`, até 41 caracteres. Pastas `_`, `templates` e `all` não viram suíte. YAML solto em `.maestro/flows/` só entra em `all`.
-2. Suba o dashboard com o caminho absoluto do app, em segundo plano, porque o processo fica no ar até ser encerrado. Ao terminar, avise o usuário que ele continua rodando. Variável ausente, relativa ou com metacaractere de shell não seleciona app nenhum. Trocar o alvo exige reiniciar o processo.
+2. Suba o dashboard com o caminho absoluto do app, em segundo plano. O dashboard se encerra sozinho depois de 30 minutos sem suíte em execução (`DASHBOARD_IDLE_MINUTES` muda o tempo; `0` desliga). Ao terminar, avise o usuário disso. Variável ausente, relativa ou com metacaractere de shell não seleciona app nenhum. Trocar o alvo exige reiniciar o processo.
 
 ```bash
 cd <pasta-do-dashboard>   # ex.: ${CLAUDE_SKILL_DIR}/maestro-qa-dashboard
@@ -56,9 +56,10 @@ Pare se `ready` não for `true`, se `projectName` ou `appId` não forem o app pe
 
 ## 2. Entender o alvo e as ferramentas
 
-1. Leia o README do app e o do dashboard. Identifique ambiente, `appId`, suíte e limites. `dev`, localhost ou uma resposta HTTP não tornam o alvo seguro.
-2. Para Maestro MCP local, use `list_devices` antes de `inspect_screen`, `take_screenshot` ou `run`. Use só um `device_id` retornado. Em site, use o dispositivo Chromium retornado.
-3. Antes de um comando Maestro pouco familiar, consulte `cheat_sheet`. Para resultado de suíte, use a interface ou as rotas GET da seção 5. Não envie credenciais.
+1. Procure no app arquivos de instrução para agentes: `CLAUDE.md` e `AGENTS.md`, na raiz e em `.claude/`. Se existirem, leia antes de tudo e siga o que disserem sobre ambientes, contas de teste, convenções de testes e comandos, desde que não contrariem as regras de segurança desta skill (seção 6).
+2. Leia o README do app e o do dashboard. Identifique ambiente, `appId`, suíte e limites. `dev`, localhost ou uma resposta HTTP não tornam o alvo seguro.
+3. Para Maestro MCP local, use `list_devices` antes de `inspect_screen`, `take_screenshot` ou `run`. Use só um `device_id` retornado. Em site, use o dispositivo Chromium retornado.
+4. Antes de um comando Maestro pouco familiar, consulte `cheat_sheet`. Para resultado de suíte, use a interface ou as rotas GET da seção 5. Não envie credenciais.
 
 ## 3. Explorar com o Maestro MCP
 
@@ -76,7 +77,7 @@ Enquanto essa exploração usa o dispositivo, não dispare suíte no dashboard.
 
 ## 5. Executar a suíte no dashboard
 
-1. Use o dashboard quando a suíte já puder rodar inteira. Confirme ambiente não produtivo, dispositivo ligado, app instalado e nenhuma execução ativa.
+1. Use o dashboard quando a suíte já puder rodar inteira. Antes, confira `GET /api/health`: se o dashboard tiver se encerrado por inatividade, suba de novo como na seção 1. Confirme ambiente não produtivo, dispositivo ligado, app instalado e nenhuma execução ativa.
 2. O modo real é `script`. `fixture` reproduz saídas gravadas e não testa o app apontado por `MAESTRO_REPO`.
 3. Envie só `suite` e `mode`. O id precisa estar em `catalog.suites`.
 
