@@ -111,7 +111,13 @@ Explora telas com o Maestro MCP, grava os fluxos YAML em `.maestro/flows/` do ap
 
 As duas skills são independentes: a dev-task valida cada entrega com flows descartáveis, e a maestro-dashboard-qa cuida da suíte de regressão permanente, só quando você pedir.
 
-Requisitos: Maestro QA Dashboard rodando localmente, Maestro MCP configurado e um emulador, simulador ou dispositivo com o app instalado.
+A skill usa como apoio o Maestro QA Dashboard, que vem dentro da própria skill, em [`maestro-dashboard-qa/maestro-qa-dashboard`](maestro-dashboard-qa/maestro-qa-dashboard). Instalando pelo `npx skills`, o dashboard é copiado junto.
+
+Requisitos:
+
+- Node.js 22.13 ou mais novo, para o dashboard.
+- [Maestro CLI](https://docs.maestro.dev) instalado, com o servidor MCP registrado no Claude Code: `claude mcp add maestro -- maestro mcp`.
+- Um emulador, simulador ou dispositivo com o app de debug instalado.
 
 Instalação no Claude Code:
 

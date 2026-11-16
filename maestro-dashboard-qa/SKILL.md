@@ -7,17 +7,33 @@ description: Cria e mantém a suíte E2E de um app Flutter ou site com o Maestro
 
 Use esta skill só quando o usuário pedir para criar, manter ou executar a suíte de regressão do app. Ela não faz parte da skill dev-task: os testes da fase 6 da dev-task usam flows descartáveis e não passam por aqui.
 
-Siga o ciclo: entender o app, inspecionar a tela, gravar o YAML, validar o fluxo e, quando a suíte existir, executá-la pelo dashboard. As rotas, as variáveis e o julgamento do resultado estão descritos abaixo. Para qualquer outra rota, consulte o `README.md` do Maestro QA Dashboard. Não invente rotas.
+Siga o ciclo: entender o app, inspecionar a tela, gravar o YAML, validar o fluxo e, quando a suíte existir, executá-la pelo dashboard. As rotas, as variáveis e o julgamento do resultado estão descritos abaixo. Para qualquer outra rota, consulte o `README.md` do dashboard (seção 0). Não invente rotas.
 
 O dashboard não compila nem instala o Flutter. Sem um `MAESTRO_REPO` absoluto, nenhum app é selecionado. Confirme `projectName`, `appId` e `driver` antes de uma execução real. Não controle o mesmo dispositivo ao mesmo tempo por MCP, CLI e dashboard.
+
+## 0. Encontrar e preparar o dashboard
+
+O Maestro QA Dashboard é o apoio desta skill: ele executa as suítes, guarda o histórico e entrega o JUnit. Ele vem dentro da pasta desta skill, em `maestro-qa-dashboard/` (https://github.com/patricksantos/dev-task-skill). O `README.md` do dashboard é a referência completa: veja as seções "Contrato do agente", "API" e "Como julgar".
+
+1. Use o dashboard em `${CLAUDE_SKILL_DIR}/maestro-qa-dashboard`. Se a pasta não existir (por exemplo, se só o `SKILL.md` foi copiado), pergunte ao usuário onde o dashboard está.
+2. Se o usuário não tiver o dashboard, peça autorização e clone o repositório numa pasta fora do app testado:
+
+```bash
+git clone --depth 1 https://github.com/patricksantos/dev-task-skill.git <pasta>
+```
+
+O dashboard fica em `<pasta>/maestro-dashboard-qa/maestro-qa-dashboard`.
+
+3. Na pasta do dashboard, confira se o Node é 22.13 ou mais novo (`node --version`), porque o banco usa `node:sqlite`. Na primeira vez, rode `npm install`. `npm test` valida o próprio dashboard sem usar o Maestro nem o dispositivo.
+4. Antes de subir, veja se já há um dashboard no ar: se `GET /api/health` responder `{ "ok": true }`, confira em `/api/prerequisites` se ele aponta para o app pedido. Se apontar para outro app, peça ao usuário para reiniciá-lo; não encerre o processo por conta própria.
 
 ## 1. Apontar o dashboard ao app
 
 1. Confirme que o app de debug está instalado no simulador ou emulador e que os fluxos estão em `.maestro/flows/<suíte>/*.yaml`, com `appId`. O nome da pasta vira o id da suíte: letra minúscula inicial, só `a-z`, `0-9`, `_` e `-`, até 41 caracteres. Pastas `_`, `templates` e `all` não viram suíte. YAML solto em `.maestro/flows/` só entra em `all`.
-2. Suba o dashboard com o caminho absoluto do app. Variável ausente, relativa ou com metacaractere de shell não seleciona app nenhum. Trocar o alvo exige reiniciar o processo.
+2. Suba o dashboard com o caminho absoluto do app, em segundo plano, porque o processo fica no ar até ser encerrado. Ao terminar, avise o usuário que ele continua rodando. Variável ausente, relativa ou com metacaractere de shell não seleciona app nenhum. Trocar o alvo exige reiniciar o processo.
 
 ```bash
-cd <raiz-do-maestro-qa-dashboard>
+cd <pasta-do-dashboard>   # ex.: ${CLAUDE_SKILL_DIR}/maestro-qa-dashboard
 MAESTRO_REPO=/caminho/absoluto/do-app \
 MAESTRO_PROJECT_NAME="Nome do app" \
 MAESTRO_APP_ID=com.exemplo.app \
@@ -40,7 +56,7 @@ Pare se `ready` não for `true`, se `projectName` ou `appId` não forem o app pe
 
 ## 2. Entender o alvo e as ferramentas
 
-1. Leia o README do app e o do Maestro QA Dashboard. Identifique ambiente, `appId`, suíte e limites. `dev`, localhost ou uma resposta HTTP não tornam o alvo seguro.
+1. Leia o README do app e o do dashboard. Identifique ambiente, `appId`, suíte e limites. `dev`, localhost ou uma resposta HTTP não tornam o alvo seguro.
 2. Para Maestro MCP local, use `list_devices` antes de `inspect_screen`, `take_screenshot` ou `run`. Use só um `device_id` retornado. Em site, use o dispositivo Chromium retornado.
 3. Antes de um comando Maestro pouco familiar, consulte `cheat_sheet`. Para resultado de suíte, use a interface ou as rotas GET da seção 5. Não envie credenciais.
 
