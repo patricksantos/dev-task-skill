@@ -156,6 +156,7 @@ npm start
 | Variável | Padrão | Efeito |
 | --- | --- | --- |
 | `DASHBOARD_PORT` | `4310` | Porta local. Valor inválido volta para `4310`. |
+| `DASHBOARD_IDLE_MINUTES` | `30` | Encerra o processo depois desse tempo sem suíte em execução. `0` desliga. |
 | `MAESTRO_REPO` | nenhum | Se for caminho absoluto válido, vira (ou atualiza) um projeto no SQLite. O alvo em execução é o projeto ativo, cadastrado na UI ou por esta variável. |
 | `MAESTRO_BIN` | `~/.maestro/bin/maestro` | Binário executável do Maestro. |
 | `MAESTRO_UDID` | vazio | UUID do simulador iOS ou serial Android. Vazio: primeiro simulador iOS ligado ou o primeiro Android conectado. |

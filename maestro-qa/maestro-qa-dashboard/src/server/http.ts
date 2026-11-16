@@ -11,8 +11,13 @@ export function json(data: unknown, status = 200): NextResponse {
   });
 }
 
+// ponytail: compara pelo nome, porque o RunManager global pode ter sido criado pelo bundle de outra rota, com outra cópia da classe RequestError
+function isRequestError(error: unknown): error is RequestError {
+  return error instanceof Error && error.name === "RequestError" && Number.isInteger((error as RequestError).status);
+}
+
 export function fail(error: unknown): NextResponse {
-  if (error instanceof RequestError) return json({ error: error.message }, error.status);
+  if (isRequestError(error)) return json({ error: error.message }, error.status);
   console.error(error);
   return json({ error: "Falha interna do dashboard." }, 500);
 }
