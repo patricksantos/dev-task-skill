@@ -139,7 +139,7 @@ export function DashboardPages(props: {
   workspace: WorkspaceState | null;
   discovery: ProjectDiscovery | null;
   selectProject: (projectId: string, environmentId?: string | null) => void;
-  createProject: (input: { name: string; description: string; type: "mobile" | "web" | "hybrid"; repositoryPath: string }) => void;
+  createProject: (input: { name: string; description: string; type: "mobile" | "web" | "hybrid"; repositoryPath: string }) => Promise<boolean>;
   confirm: { suite: SuiteId; mode: "script" | "fixture" } | null;
   setConfirm: (value: { suite: SuiteId; mode: "script" | "fixture" } | null) => void;
   scenarioQuery: string;
@@ -934,11 +934,12 @@ function ProjectForm({
   onCreate,
 }: {
   existing: QaProject[];
-  onCreate: (input: { name: string; description: string; type: "mobile" | "web" | "hybrid"; repositoryPath: string }) => void;
+  onCreate: (input: { name: string; description: string; type: "mobile" | "web" | "hybrid"; repositoryPath: string }) => Promise<boolean>;
 }) {
   const [type, setType] = useState<"mobile" | "web" | "hybrid">("mobile");
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [repositoryPath, setRepositoryPath] = useState("");
   const [picking, setPicking] = useState(false);
 
@@ -971,25 +972,37 @@ function ProjectForm({
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
-          const data = new FormData(event.currentTarget);
-          const nextName = String(data.get("name") ?? "").trim();
-          const nextPath = String(data.get("repositoryPath") ?? "").trim();
-          if (!nextName || !nextPath) {
-            setError("Informe o nome e o diretório local do projeto.");
-            return;
-          }
-          setError(null);
-          onCreate({
-            name: nextName,
-            description: String(data.get("description") ?? ""),
-            type,
-            repositoryPath: nextPath,
-          });
+          void (async () => {
+            const data = new FormData(event.currentTarget);
+            const nextName = String(data.get("name") ?? "").trim();
+            const nextPath = String(data.get("repositoryPath") ?? "").trim();
+            if (!nextName || !nextPath) {
+              setError("Informe o nome e o diretório local do projeto.");
+              return;
+            }
+            const duplicate = existing.find((project) => project.repositoryPath === nextPath);
+            if (duplicate) {
+              setError(`Este diretório já está cadastrado como ${duplicate.name}. Escolha outra pasta.`);
+              return;
+            }
+            setError(null);
+            const created = await onCreate({
+              name: nextName,
+              description: String(data.get("description") ?? ""),
+              type,
+              repositoryPath: nextPath,
+            });
+            if (!created) return;
+            setName("");
+            setDescription("");
+            setRepositoryPath("");
+            setType("mobile");
+          })();
         }}
       >
         {error ? <p className="form-error" role="alert">{error}</p> : null}
         <TextField label="Nome" name="name" maxLength={80} placeholder="Nome do app" value={name} onChange={setName} />
-        <TextField label="Descrição" name="description" maxLength={240} placeholder="Opcional" />
+        <TextField label="Descrição" name="description" maxLength={240} placeholder="Opcional" value={description} onChange={setDescription} />
         <SelectField
           label="Tipo"
           name="type"

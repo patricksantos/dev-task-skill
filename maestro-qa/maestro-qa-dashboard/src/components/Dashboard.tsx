@@ -320,10 +320,12 @@ export function Dashboard() {
     });
     if (!response.ok) {
       setError(await readError(response));
-      return;
+      return false;
     }
+    setError(null);
     await reloadProjectData();
     setPage("projects");
+    return true;
   }
 
   async function openRun(id: string) {
@@ -408,7 +410,7 @@ export function Dashboard() {
       workspace={workspace}
       discovery={discovery}
       selectProject={(projectId, environmentId) => void selectProject(projectId, environmentId)}
-      createProject={(input) => void createProject(input)}
+      createProject={createProject}
       confirm={confirm}
       setConfirm={setConfirm}
       scenarioQuery={scenarioQuery}
