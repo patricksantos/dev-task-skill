@@ -1,5 +1,5 @@
 ---
-name: maestro-dashboard-qa
+name: maestro-qa
 description: Cria e mantém a suíte E2E de um app Flutter ou site com o Maestro MCP e o Maestro QA Dashboard. Usar quando pedirem para criar ou manter a suíte. Não serve para validar uma tarefa da dev-task.
 ---
 
@@ -13,16 +13,16 @@ O dashboard não compila nem instala o Flutter. Sem um `MAESTRO_REPO` absoluto, 
 
 ## 0. Encontrar e preparar o dashboard
 
-O Maestro QA Dashboard é o apoio desta skill: ele executa as suítes, guarda o histórico e entrega o JUnit. Ele vem dentro da pasta desta skill, em `maestro-qa-dashboard/` (https://github.com/patricksantos/dev-task-skill). O `README.md` do dashboard é a referência completa: veja as seções "Contrato do agente", "API" e "Como julgar".
+O Maestro QA Dashboard é o apoio desta skill: ele executa as suítes, guarda o histórico e entrega o JUnit. Ele vem dentro da pasta desta skill, em `maestro-qa-dashboard/` (https://github.com/patricksantos/my-trainee-dev). O `README.md` do dashboard é a referência completa: veja as seções "Contrato do agente", "API" e "Como julgar".
 
 1. Use o dashboard em `${CLAUDE_SKILL_DIR}/maestro-qa-dashboard`. Se a pasta não existir (por exemplo, se só o `SKILL.md` foi copiado), pergunte ao usuário onde o dashboard está.
 2. Se o usuário não tiver o dashboard, peça autorização e clone o repositório numa pasta fora do app testado:
 
 ```bash
-git clone --depth 1 https://github.com/patricksantos/dev-task-skill.git <pasta>
+git clone --depth 1 https://github.com/patricksantos/my-trainee-dev.git <pasta>
 ```
 
-O dashboard fica em `<pasta>/maestro-dashboard-qa/maestro-qa-dashboard`.
+O dashboard fica em `<pasta>/maestro-qa/maestro-qa-dashboard`.
 
 3. Na pasta do dashboard, confira se o Node é 22.13 ou mais novo (`node --version`), porque o banco usa `node:sqlite`. Na primeira vez, rode `npm install`. `npm test` valida o próprio dashboard sem usar o Maestro nem o dispositivo.
 4. Antes de subir, veja se já há um dashboard no ar: se `GET /api/health` responder `{ "ok": true }`, confira em `/api/prerequisites` se ele aponta para o app pedido. Se apontar para outro app, peça ao usuário para reiniciá-lo; não encerre o processo por conta própria.

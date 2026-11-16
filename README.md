@@ -6,7 +6,7 @@ Skill para o Claude que conduz o desenvolvimento de uma tarefa (feature ou bug) 
 
 Em vez de sair escrevendo código, o Claude segue um roteiro: entende a tarefa, pergunta o que estiver ambíguo, apresenta um plano, espera sua aprovação e só então implementa, testa e revisa.
 
-O repositório também traz a skill [`maestro-dashboard-qa`](#skill-maestro-dashboard-qa), para testes E2E com o Maestro QA Dashboard.
+O repositório também traz a skill [`maestro-qa`](#skill-maestro-qa), para testes E2E com o Maestro QA Dashboard.
 
 ## Como funciona
 
@@ -37,12 +37,12 @@ Quando a tarefa é um **bug**, o fluxo muda: o Claude reproduz o problema antes 
 
 ```
 Instale esta skill na minha conta:
-https://github.com/patricksantos/dev-task-skill/blob/main/dev-task/SKILL.md
+https://github.com/patricksantos/my-trainee-dev/blob/main/dev-task/SKILL.md
 ```
 
 O Claude lê o arquivo e mostra um cartão para você revisar e salvar a skill.
 
-**Pelo arquivo ZIP.** Baixe o [`dev-task.zip`](https://github.com/patricksantos/dev-task-skill/releases/latest/download/dev-task.zip) e envie em Customize > Skills > + > Create skill > Upload a skill. Depois ative a skill na lista.
+**Pelo arquivo ZIP.** Baixe o [`dev-task.zip`](https://github.com/patricksantos/my-trainee-dev/releases/latest/download/dev-task.zip) e envie em Customize > Skills > + > Create skill > Upload a skill. Depois ative a skill na lista.
 
 > Use o ZIP da página de releases. O botão "Download ZIP" do GitHub gera um arquivo com outra estrutura de pastas, que o Claude não reconhece como skill.
 
@@ -53,18 +53,18 @@ Nos dois casos, a execução de código precisa estar ativada nas configuraçõe
 **Com o [`skills`](https://github.com/vercel-labs/skills)** (precisa de Node.js):
 
 ```bash
-npx skills add patricksantos/dev-task-skill --skill dev-task -a claude-code -g
+npx skills add patricksantos/my-trainee-dev --skill dev-task -a claude-code -g
 ```
 
 **Sem dependências**, baixando só o arquivo:
 
 ```bash
 mkdir -p ~/.claude/skills/dev-task
-curl -fsSL https://raw.githubusercontent.com/patricksantos/dev-task-skill/main/dev-task/SKILL.md \
+curl -fsSL https://raw.githubusercontent.com/patricksantos/my-trainee-dev/main/dev-task/SKILL.md \
   -o ~/.claude/skills/dev-task/SKILL.md
 ```
 
-**Ou peça ao próprio Claude Code:** "Instale a skill de https://github.com/patricksantos/dev-task-skill em `~/.claude/skills/dev-task`".
+**Ou peça ao próprio Claude Code:** "Instale a skill de https://github.com/patricksantos/my-trainee-dev em `~/.claude/skills/dev-task`".
 
 Os comandos acima instalam para todos os seus projetos. Para instalar só em um projeto (e deixar disponível para o time que clonar o repositório), tire o `-g` do comando `npx` ou troque `~/.claude/skills` por `.claude/skills` dentro do projeto.
 
@@ -105,13 +105,13 @@ rm -rf ~/.claude/skills/dev-task
 
 As diretrizes do projeto (`CLAUDE.md` / `AGENTS.md`) têm prioridade sobre a skill. Por isso, o jeito mais simples de adaptar o fluxo ao seu time é registrar ali os comandos, padrões e convenções do projeto. Para mudar o fluxo em si, faça um fork e edite `dev-task/SKILL.md`.
 
-## Skill maestro-dashboard-qa
+## Skill maestro-qa
 
 Explora telas com o Maestro MCP, grava os fluxos YAML em `.maestro/flows/` do app e executa as suítes pelo Maestro QA Dashboard, conferindo o resultado pelo JUnit. Não faz commit, compra, transação nem ação destrutiva sem autorização.
 
-As duas skills são independentes: a dev-task valida cada entrega com flows descartáveis, e a maestro-dashboard-qa cuida da suíte de regressão permanente, só quando você pedir.
+As duas skills são independentes: a dev-task valida cada entrega com flows descartáveis, e a maestro-qa cuida da suíte de regressão permanente, só quando você pedir.
 
-A skill usa como apoio o Maestro QA Dashboard, que vem dentro da própria skill, em [`maestro-dashboard-qa/maestro-qa-dashboard`](maestro-dashboard-qa/maestro-qa-dashboard). Instalando pelo `npx skills`, o dashboard é copiado junto.
+A skill usa como apoio o Maestro QA Dashboard, que vem dentro da própria skill, em [`maestro-qa/maestro-qa-dashboard`](maestro-qa/maestro-qa-dashboard). Instalando pelo `npx skills`, o dashboard é copiado junto.
 
 Requisitos:
 
@@ -122,7 +122,7 @@ Requisitos:
 Instalação no Claude Code:
 
 ```bash
-npx skills add patricksantos/dev-task-skill --skill maestro-dashboard-qa -a claude-code -g
+npx skills add patricksantos/my-trainee-dev --skill maestro-qa -a claude-code -g
 ```
 
 ## Licença

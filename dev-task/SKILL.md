@@ -85,7 +85,7 @@ Se o usuário pedir ajustes, ou se surgir informação nova, volte às fases 2�
 
 ## Fase 6 — Teste no Maestro (agente dedicado)
 
-Delegue a um subagente de testes, passando os critérios de aceite e como rodar o app. Ele escreve os flows, executa e reporta; não corrige código do projeto. Os flows são **descartáveis**: servem para validar esta entrega e não entram no repositório. Esta fase não cria nem altera a suíte de regressão do app (`.maestro/flows/`) e não usa a skill maestro-dashboard-qa; manter a suíte é outro trabalho, feito só quando o usuário pedir.
+Delegue a um subagente de testes, passando os critérios de aceite e como rodar o app. Ele escreve os flows, executa e reporta; não corrige código do projeto. Os flows são **descartáveis**: servem para validar esta entrega e não entram no repositório. Esta fase não cria nem altera a suíte de regressão do app (`.maestro/flows/`) e não usa a skill maestro-qa; manter a suíte é outro trabalho, feito só quando o usuário pedir.
 
 1. Crie cenários a partir dos critérios de aceite: caminho feliz, validações, erros, estados vazios e regressão do fluxo que já existia.
 2. Escreva os flows YAML e salve as capturas numa pasta temporária fora do versionamento (fora do repositório, ou numa pasta ignorada pelo git), nunca dentro de `.maestro/flows/`.
