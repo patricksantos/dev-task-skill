@@ -50,7 +50,7 @@ Nos dois casos, a execução de código precisa estar ativada nas configuraçõe
 
 ### Claude Code
 
-**Com o [`skills`](https://github.com/vercel-labs/skills)** (precisa de Node.js):
+**Com o [`skills`](https://github.com/vercel-labs/skills)** (precisa do Node.js 22 ou mais novo; confira com `node --version`):
 
 ```bash
 npx skills add patricksantos/my-trainee-dev --skill dev-task -a claude-code -g
@@ -115,8 +115,8 @@ A skill usa como apoio o Maestro QA Dashboard, que vem dentro da própria skill,
 
 Requisitos:
 
-- Node.js 22.13 ou mais novo, para o dashboard.
-- [Maestro CLI](https://docs.maestro.dev) instalado, com o servidor MCP registrado no Claude Code: `claude mcp add maestro -- maestro mcp`.
+- Node.js 22.13 ou mais novo, para o dashboard. Com o nvm: `nvm install 22 && nvm alias default 22`.
+- [Maestro CLI](https://docs.maestro.dev) instalado, com o servidor MCP registrado no Claude Code para todos os projetos: `claude mcp add -s user maestro -- maestro mcp`. Sem o `-s user`, o MCP só vale na pasta onde o comando foi rodado.
 - Um emulador, simulador ou dispositivo com o app de debug instalado.
 
 Instalação no Claude Code:
