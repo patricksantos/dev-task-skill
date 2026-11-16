@@ -1,5 +1,3 @@
-export const SUITE_IDS = ["all", "smoke", "stores", "coupons", "navigation"] as const;
-
 export type SuiteId = string;
 
 export type RunMode = "script" | "fixture";
@@ -40,6 +38,7 @@ export interface LogView {
 
 export interface RunView {
   id: string;
+  projectId: string | null;
   createdAt: string;
   startedAt: string | null;
   finishedAt: string | null;

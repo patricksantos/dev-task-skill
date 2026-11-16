@@ -1,16 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
+import { humanizeLabel } from "@/labels";
 import { SUITES } from "@/suites";
 
 const SUITE_ID = /^[a-z][a-z0-9_-]{0,40}$/;
 const APP_ID = /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$/;
-const MODULE_LABELS: Record<string, string> = {
-  all: "Todos",
-  smoke: "Smoke",
-  stores: "Lojas",
-  coupons: "Cupons",
-  navigation: "Navegação",
-};
 
 export interface ProjectSuite {
   id: string;
@@ -109,7 +103,7 @@ function flowSuites(repoRoot: string): ProjectSuite[] {
     },
     ...modules.map((name) => ({
       id: name,
-      label: MODULE_LABELS[name] ?? name,
+      label: humanizeLabel(name),
       kind: "maestro" as const,
       script: null,
       target: `.maestro/flows/${name}`,

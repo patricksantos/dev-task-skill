@@ -5,6 +5,7 @@ import type { LogStream, LogView, RunMode, RunStatus, RunView, ScenarioView, Sui
 
 interface RunRow {
   id: string;
+  project_id: string | null;
   created_at: string;
   started_at: string | null;
   finished_at: string | null;
@@ -50,6 +51,7 @@ interface ScenarioRow {
 function toRun(row: RunRow): RunView & { pid: number | null } {
   return {
     id: row.id,
+    projectId: row.project_id ?? null,
     createdAt: row.created_at,
     startedAt: row.started_at,
     finishedAt: row.finished_at,
@@ -106,6 +108,7 @@ export class RunStore {
       PRAGMA busy_timeout = 3000;
       CREATE TABLE IF NOT EXISTS runs (
         id TEXT PRIMARY KEY,
+        project_id TEXT,
         created_at TEXT NOT NULL,
         started_at TEXT,
         finished_at TEXT,
@@ -158,22 +161,32 @@ export class RunStore {
         command TEXT
       );
       CREATE INDEX IF NOT EXISTS idx_runs_created ON runs(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_runs_project ON runs(project_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_logs_run ON logs(run_id, id);
     `);
+    this.ensureProjectColumn();
+  }
+
+  private ensureProjectColumn(): void {
+    const columns = this.db.prepare("PRAGMA table_info(runs)").all() as Array<{ name: string }>;
+    if (!columns.some((column) => column.name === "project_id")) {
+      this.db.exec("ALTER TABLE runs ADD COLUMN project_id TEXT");
+    }
   }
 
   insertRun(run: RunView, pid: number | null): void {
     this.db
       .prepare(
         `INSERT INTO runs (
-          id, created_at, started_at, finished_at, environment, api_label, app_id, simulator_udid,
+          id, project_id, created_at, started_at, finished_at, environment, api_label, app_id, simulator_udid,
           simulator_name, suite, suite_label, mode, status, duration_ms, passed_count, failed_count,
           skipped_count, aborted_count, running_count, pending_count, total_count, exit_code, pid,
           junit_path, error_message
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         run.id,
+        run.projectId,
         run.createdAt,
         run.startedAt,
         run.finishedAt,
@@ -285,13 +298,23 @@ export class RunStore {
     return row ? toRun(row) : null;
   }
 
-  latestRun(): (RunView & { pid: number | null }) | null {
-    const row = this.db.prepare("SELECT * FROM runs ORDER BY created_at DESC LIMIT 1").get() as RunRow | undefined;
+  latestRun(projectId?: string | null): (RunView & { pid: number | null }) | null {
+    const row = (
+      projectId
+        ? this.db.prepare("SELECT * FROM runs WHERE project_id = ? ORDER BY created_at DESC LIMIT 1").get(projectId)
+        : this.db.prepare("SELECT * FROM runs ORDER BY created_at DESC LIMIT 1").get()
+    ) as RunRow | undefined;
     return row ? toRun(row) : null;
   }
 
-  listRuns(limit = 30): RunView[] {
-    const rows = this.db.prepare("SELECT * FROM runs ORDER BY created_at DESC LIMIT ?").all(limit) as unknown as RunRow[];
+  listRuns(limit = 30, projectId?: string | null): RunView[] {
+    const rows = (
+      projectId
+        ? this.db
+            .prepare("SELECT * FROM runs WHERE project_id = ? ORDER BY created_at DESC LIMIT ?")
+            .all(projectId, limit)
+        : this.db.prepare("SELECT * FROM runs ORDER BY created_at DESC LIMIT ?").all(limit)
+    ) as unknown as RunRow[];
     return rows.map((row) => {
       const run = toRun(row);
       const { pid: _pid, ...view } = run;

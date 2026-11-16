@@ -1,10 +1,29 @@
 # Maestro QA Dashboard
 
-Dashboard local para executar suítes Maestro de um app Flutter. O processo escuta só em `http://127.0.0.1:4310`. O navegador e a API aceitam só o id da suíte e o modo; não existe comando livre.
+Dashboard local para cadastrar projetos com fluxos Maestro, executar suítes autorizadas e guardar evidências. O processo escuta só em `http://127.0.0.1:4310`. O `POST /api/runs` aceita só o id da suíte e o modo; não existe comando livre.
 
-O dashboard não compila nem instala o Flutter. O app de debug já precisa estar no simulador ou no emulador, e os fluxos já precisam existir em `.maestro/flows`.
+O dashboard não compila, não instala e não clona o app. O build de debug já precisa estar no dispositivo (ou o alvo web no Chromium), e os YAML já precisam existir em `.maestro/flows` ou nos scripts `run_maestro_*.sh` conhecidos.
 
-`MAESTRO_REPO` é obrigatório. Sem um caminho absoluto, o dashboard não escolhe um app. Confirme `projectName` e `appId` em `GET /api/prerequisites` antes de disparar uma suíte real.
+O alvo efetivo é o **projeto ativo**: um diretório local absoluto cadastrado em SQLite (`qa_projects`). `MAESTRO_REPO` no processo, se for um caminho absoluto válido, entra como projeto inicial. Sem projeto ativo, nenhuma suíte real fica disponível. Confirme `projectName` e `appId` em `GET /api/prerequisites` antes de disparar uma suíte real.
+
+## Interface
+
+A SPA cobre operação, conta e sistema. O tema padrão é escuro; o claro fica em `localStorage` (`maestro-qa-theme`) e é aplicado no `<head>` antes da primeira pintura, para o refresh não piscar o modo errado.
+
+| Área | Página | Função |
+| --- | --- | --- |
+| Operação | Visão geral | Projeto ativo, prontidão, KPIs das execuções **reais** (fixture fica de fora). |
+| Operação | Runs | Botões das suítes do catálogo, execução ao vivo, logs e evidências. |
+| Operação | Histórico | Execuções do projeto ativo, JUnit e isolamento por `project_id`. |
+| Conta | Projetos | Cadastro e lista. Configurações **não** cadastra projeto. |
+| Sistema | Settings | Aparência, projeto/ambiente ativos, fluxos, execução e integrações. |
+| Sistema | Documentação | Central de ajuda para humanos e agentes (`?help=<slug>`). |
+
+**Primeiros passos** na Visão geral usa o estado real (projeto, ambiente, dispositivo, catálogo, primeira execução `script`). Com os cinco itens concluídos o card some da Visão geral; o checklist continua em Documentação → Primeiros passos.
+
+**Cadastro de projeto:** nome, descrição opcional, tipo (`mobile`, `web`, `hybrid`) e diretório local absoluto. **Escolher pasta** chama `POST /api/projects/browse` e abre o seletor nativo **no host do dashboard** (Finder no macOS; no Linux, zenity/kdialog; no Windows, diálogo do sistema). O navegador não entrega caminho absoluto; por isso não use `<input type="file">`. Cancelar o diálogo não altera o campo. Digitar o path continua válido. O cadastro não dispara testes e não clona repositório. Path relativo, inexistente ou com metacaractere de shell responde `400`. Diretório já cadastrado responde `409`. Trocar o projeto ativo com suíte em andamento responde `409`.
+
+Links de ajuda e atalhos de texto na interface usam a laranja da marca, com ícone.
 
 ## Testar um projeto Flutter
 
@@ -46,34 +65,32 @@ adb devices
 flutter install -d <serial>
 ```
 
-### 2. Subir o dashboard apontando para esse app
-
-As variáveis são lidas do processo. Trocar o alvo exige reiniciar o servidor. Um caminho relativo, vazio ou com metacaractere de shell é ignorado e nenhum app é selecionado.
+### 2. Subir o dashboard e cadastrar o app
 
 ```bash
 cd <raiz-deste-repositório>
 npm install
-
-MAESTRO_REPO=/caminho/absoluto/meu-app \
-MAESTRO_PROJECT_NAME="Loja Exemplo" \
-MAESTRO_APP_ID=com.example.shop \
 npm run dev
 ```
 
-`MAESTRO_APP_ID` é opcional quando algum YAML já declara `appId`. `MAESTRO_UDID` é opcional: sem ele, o dashboard usa o primeiro simulador iOS ligado e, se não houver, o primeiro Android em `adb devices`. `MAESTRO_API_URL` é opcional e só aceita HTTPS, sem usuário nem senha.
+A interface fica em `http://127.0.0.1:4310`. Abra **Projetos**, informe o diretório absoluto (ou **Escolher pasta**) e cadastre sem executar testes. O seletor do topo passa a listar esse projeto. **Runs** lista os botões a partir do catálogo do projeto ativo. **Settings** mostra o app, o ambiente e o dispositivo efetivos.
 
-A interface fica em `http://127.0.0.1:4310`. A página Execuções lista os botões a partir do catálogo. A página Configurações mostra o app, o ambiente e o dispositivo efetivos.
+Atalho de processo: `MAESTRO_REPO` absoluto válido sincroniza um projeto inicial no SQLite. Cadastrar pela interface **não** reescreve a variável de ambiente; o runner passa a usar o `repositoryPath` do projeto ativo. Trocar de projeto na UI não exige reiniciar o servidor. Um `MAESTRO_REPO` relativo, vazio ou com metacaractere de shell é ignorado.
+
+`MAESTRO_APP_ID` é opcional quando algum YAML já declara `appId`. `MAESTRO_UDID` é opcional: sem ele, o dashboard usa o primeiro simulador iOS ligado e, se não houver, o primeiro Android em `adb devices`. `MAESTRO_API_URL` é opcional e só aceita HTTPS, sem usuário nem senha.
 
 ### 3. Conferir o alvo antes de executar
 
 ```bash
 curl -sS http://127.0.0.1:4310/api/health
+curl -sS http://127.0.0.1:4310/api/projects
 curl -sS http://127.0.0.1:4310/api/prerequisites
 curl -sS http://127.0.0.1:4310/api/catalog
 ```
 
 Siga só se estes pontos baterem com o app pretendido:
 
+- `activeProject.repositoryPath` é o diretório do app.
 - `ready` é `true`.
 - `driver` é `flows`.
 - `projectName` é o nome configurado ou o nome da pasta do app.
@@ -109,7 +126,8 @@ No modo `flows`, o processo é `maestro test --format JUNIT --output .maestro/re
 - O texto do terminal é sinal. O veredito é `run.status` depois que deixa de ser `running`, junto com os cenários e, quando existir, o JUnit.
 - Logs já saem sem ANSI, JWT, cookies e dados pessoais. Não peça o stdout bruto do processo.
 - A captura de tela fica desligada enquanto uma suíte está em execução (`409`). Não use o Maestro MCP, a CLI nem outro portal no mesmo dispositivo durante essa execução.
-- O ambiente vem do processo. A API não altera `MAESTRO_REPO`, `MAESTRO_APP_ID`, `MAESTRO_API_URL`, `MAESTRO_BIN`, `MAESTRO_UDID` nem `DASHBOARD_PORT`.
+- `POST /api/runs` não altera repositório, binário, UDID nem porta. O repositório efetivo é o do **projeto ativo** (`GET /api/projects`). `MAESTRO_BIN`, `MAESTRO_UDID`, `MAESTRO_APP_ID` e `DASHBOARD_PORT` continuam só no processo.
+- Não invente rota de plugin. Não existe `/api/agents`. Documentação: `http://127.0.0.1:4310/?help=introducao`. Skill local: `.agents/skills/maestro-dashboard-qa/SKILL.md`.
 
 ## Subir o servidor
 
@@ -131,14 +149,14 @@ npm run build
 npm start
 ```
 
-`npm test` cobre parser, JUnit, sanitização, catálogo e runner com saídas simuladas. Não inicia o Maestro nem o simulador.
+`npm test` cobre parser, JUnit, sanitização, catálogo, cadastro de projeto, seletor de pasta (sem abrir o diálogo), tema e runner com saídas simuladas. Não inicia o Maestro nem o simulador.
 
 ## Ambiente do processo
 
 | Variável | Padrão | Efeito |
 | --- | --- | --- |
 | `DASHBOARD_PORT` | `4310` | Porta local. Valor inválido volta para `4310`. |
-| `MAESTRO_REPO` | nenhum | Raiz do app Flutter. Caminho absoluto, sem metacaracteres de shell. Sem isso, nenhuma suíte real fica disponível. |
+| `MAESTRO_REPO` | nenhum | Se for caminho absoluto válido, vira (ou atualiza) um projeto no SQLite. O alvo em execução é o projeto ativo, cadastrado na UI ou por esta variável. |
 | `MAESTRO_BIN` | `~/.maestro/bin/maestro` | Binário executável do Maestro. |
 | `MAESTRO_UDID` | vazio | UUID do simulador iOS ou serial Android. Vazio: primeiro simulador iOS ligado ou o primeiro Android conectado. |
 | `MAESTRO_APP_ID` | `appId` do YAML, ou `app` | Identificador do app instalado. Fora do formato `com.exemplo.app`, o valor é ignorado. |
@@ -150,12 +168,13 @@ npm start
 ## Procedimento
 
 1. `GET /api/health`. Sem `{ "ok": true }`, o servidor não está no ar.
-2. `GET /api/prerequisites`. Para suíte real, `ready` precisa ser `true`. Checagens `required`: Maestro, os scripts ou os fluxos descobertos, e o dispositivo ligado. `hml` é `warning` e não bloqueia o start.
-3. `GET /api/catalog`. Os ids executáveis estão em `suites`. Ignore fluxos com `suites: []`: estão fora da suíte completa.
-4. `POST /api/runs` com um id de `catalog.suites`. Guarde `run.id`.
-5. Consulte `GET /api/runs/{id}` até `run.status` deixar de ser `running`. Intervalo de alguns segundos. Suítes reais levam minutos.
-6. Leia o resultado pela seção [Como julgar](#como-julgar). Se precisar do XML, `GET /api/runs/{id}/report`.
-7. `POST /api/runs/{id}/stop` só quando a tarefa for interromper a execução ativa.
+2. `GET /api/projects`. Sem `activeProject`, cadastre um diretório (`POST /api/projects`) ou suba com `MAESTRO_REPO` absoluto. Confira `activeProject.repositoryPath`.
+3. `GET /api/prerequisites`. Para suíte real, `ready` precisa ser `true`. Checagens `required`: Maestro, os scripts ou os fluxos descobertos, e o dispositivo ligado. `hml` é `warning` e não bloqueia o start.
+4. `GET /api/catalog`. Os ids executáveis estão em `suites`. Ignore fluxos com `suites: []`: estão fora da suíte completa.
+5. `POST /api/runs` com um id de `catalog.suites`. Guarde `run.id`.
+6. Consulte `GET /api/runs/{id}` até `run.status` deixar de ser `running`. Intervalo de alguns segundos. Suítes reais levam minutos.
+7. Leia o resultado pela seção [Como julgar](#como-julgar). Se precisar do XML, `GET /api/runs/{id}/report`.
+8. `POST /api/runs/{id}/stop` só quando a tarefa for interromper a execução ativa.
 
 Se o start responder `409`, há suíte em andamento. Liste `GET /api/runs` e acompanhe a que está `running`. Não dispare outra. Se responder `412`, releia os pré-requisitos e reporte a checagem `required` com `ok: false`. Não repita o `script` até `ready` voltar a `true`.
 
@@ -163,7 +182,7 @@ O cache dos pré-requisitos dura 15 segundos.
 
 ## Suítes
 
-Sem esses scripts, as suítes saem de `.maestro/flows` e aparecem em `catalog.suites`. A tabela abaixo vale só quando esses arquivos estão no `MAESTRO_REPO`.
+Sem esses scripts, as suítes saem de `.maestro/flows` e aparecem em `catalog.suites`. A tabela abaixo vale só quando esses arquivos estão no repositório do **projeto ativo**.
 
 | `suite` | Rótulo | Script | JUnit no app |
 | --- | --- | --- | --- |
@@ -182,6 +201,39 @@ Base: `http://127.0.0.1:4310`. Respostas JSON levam `Cache-Control: no-store`. E
 ### `GET /api/health`
 
 `200` `{ "ok": true, "service": "maestro-qa-dashboard" }`.
+
+### `GET /api/projects`
+
+`200` com o workspace: `projects`, `environments`, `activeProjectId`, `activeEnvironmentId`, `activeProject`, `activeEnvironment` e `discovery` (catálogo somente leitura do projeto ativo, ou `null`).
+
+Sem projeto cadastrado, `projects` é `[]` e `activeProject` é `null`. Com projeto ativo, o histórico e o catálogo passam a ser desse diretório.
+
+### `POST /api/projects`
+
+Corpo só com `name`, `description`, `type` (`mobile` | `web` | `hybrid`) e `repositoryPath` (absoluto, existente, sem metacaractere de shell). `201` `{ "project", "workspace" }`. Não dispara suíte e não clona Git.
+
+| Status | Quando |
+| --- | --- |
+| `400` | Path inválido, chave extra, JSON inválido ou corpo acima de 4000 caracteres. |
+| `409` | Esse diretório já está cadastrado. |
+
+### `POST /api/projects/browse`
+
+Abre o seletor nativo de pasta **na máquina onde o dashboard está rodando**. `200` `{ "path": "/Users/…/app" | null, "cancelled": true|false }`. Use o `path` em `repositoryPath`. Não valida o diretório além do que o sistema devolveu; a validação ocorre no `POST /api/projects`.
+
+`500` se o diálogo falhar. `501` se o SO não tiver seletor conhecido. Cancelar o diálogo não é erro.
+
+### `POST /api/projects/{id}/select`
+
+Ativa o projeto. Corpo opcional `{ "environmentId": "<uuid>" }`. `200` `{ "workspace" }`. `404` se o id não existe ou está desabilitado. `409` se há suíte `running`.
+
+### `GET /api/projects/{id}/discover`
+
+`200` `{ "discovery": { driver, appId, suites, modules, flowCount, error } }`. Somente leitura. `404` se o projeto não existe.
+
+### `PATCH /api/projects/{id}`
+
+Corpo só com `name`, `description`, `type`, `enabled`. Não troca `repositoryPath`. `200` `{ "project", "workspace" }`.
 
 ### `GET /api/prerequisites`
 
@@ -215,7 +267,7 @@ Base: `http://127.0.0.1:4310`. Respostas JSON levam `Cache-Control: no-store`. E
 
 ### `GET /api/runs`
 
-`{ "runs": [Run] }` com as últimas 40 execuções, da mais recente para a mais antiga.
+`{ "runs": [Run] }` com as últimas 40 execuções, da mais recente para a mais antiga. Com projeto ativo, só as daquele `project_id`. Sem projeto ativo, lista o que houver (incluindo execuções órfãs). `mode: "fixture"` aparece no histórico e não entra nos KPIs da Visão geral.
 
 ### `POST /api/runs`
 
@@ -294,17 +346,19 @@ Uma execução terminou quando `status` não é `running`. Aí:
 
 A taxa de sucesso é aprovados ÷ (aprovados + reprovados). Ignorados, interrompidos, pendentes e em execução entram no total e ficam fora da taxa. Enquanto a execução está `running` ou `aborted`, a taxa fica em aberto.
 
-Campos úteis de `Run`: `id`, `suite`, `suiteLabel`, `mode`, `status`, `exitCode`, `durationMs`, `passedCount`, `failedCount`, `skippedCount`, `abortedCount`, `totalCount`, `errorMessage`, `junitPath`, `simulatorName`, `startedAt`, `finishedAt`.
+Campos úteis de `Run`: `id`, `projectId`, `suite`, `suiteLabel`, `mode`, `status`, `exitCode`, `durationMs`, `passedCount`, `failedCount`, `skippedCount`, `abortedCount`, `totalCount`, `errorMessage`, `junitPath`, `simulatorName`, `startedAt`, `finishedAt`.
 
 Campos úteis de `Scenario`: `name`, `file`, `module`, `status`, `confirmed`, `errorMessage`, `durationMs`. `logSignal` é o que o parser viu no terminal antes do JUnit; não substitui `status` no fim.
 
 `Log` traz `stream` (`stdout` ou `stderr`), `line`, `ts`, `scenarioName` e `command`. Serve para explicar uma falha, não para inventar o veredito.
 
-Histórico em SQLite: `data/maestro-qa.sqlite`. Execuções `fixture` ficam no histórico e não entram no resumo de execuções reais da Visão geral.
+Histórico em SQLite: `data/maestro-qa.sqlite` (`runs`, `scenarios`, `logs`, `qa_projects`, `qa_environments`, `qa_settings`). Execuções `fixture` ficam no histórico e não entram no resumo de execuções reais da Visão geral.
+
+Documentação na UI: slugs `introducao`, `arquitetura`, `instalacao`, `primeiro-projeto`, `ambientes`, `descoberta-modulos`, `suites-autorizadas`, `executar-testes`, `monitoramento`, `evidencias`, `junit`, `historico`, `conectar-agente`, `skill-maestro-qa`, `seguranca`, `troubleshooting`, `resultados`. Abra com `?help=<slug>` ou o tópico `onboarding`.
 
 ## O que o runner faz
 
-1. Resolve o projeto pelo `MAESTRO_REPO`. Com qualquer script `run_maestro_*.sh` conhecido, executa só esses scripts. Sem eles, descobre `.maestro/flows` e chama `maestro test`.
+1. Resolve o repositório pelo projeto ativo (cadastro ou `MAESTRO_REPO` sincronizado). Com qualquer script `run_maestro_*.sh` conhecido, executa só esses scripts. Sem eles, descobre `.maestro/flows` e chama `maestro test`.
 2. Confere o binário do Maestro, a permissão de execução dos scripts ou a existência dos fluxos, e se o dispositivo está disponível.
 3. Consulta `MAESTRO_API_URL` sem credencial, quando houver URL. Falha de rede gera alerta e não bloqueia a execução. Sem URL, a checagem `hml` fica `ok` com o aviso de que nenhuma API foi configurada.
 4. Inicia uma única suíte, com `MAESTRO_UDID` apontando para o dispositivo escolhido.

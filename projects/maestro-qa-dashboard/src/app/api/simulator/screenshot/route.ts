@@ -2,7 +2,6 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { loadConfig } from "@/config";
 import { captureSimulatorScreenshot, checkPrerequisites } from "@/prerequisites/prerequisites";
 import { json } from "@/server/http";
 import { getRunManager } from "@/server/singleton";
@@ -19,7 +18,7 @@ export async function GET() {
   }
   const file = path.join(os.tmpdir(), `maestro-qa-${randomUUID()}.png`);
   try {
-    const report = await checkPrerequisites(loadConfig());
+    const report = await checkPrerequisites(getRunManager().config);
     await captureSimulatorScreenshot(report.simulatorUdid, file);
     const bytes = fs.readFileSync(file);
     return new Response(bytes, {

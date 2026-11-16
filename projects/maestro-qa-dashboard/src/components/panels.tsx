@@ -87,15 +87,16 @@ export function ScenarioButton({
       "span",
       { className: "scenario-name" },
       createElement("b", null, scenario.name),
-      createElement("small", null, moduleLabel(scenario.module)),
+      live ? createElement("small", { className: "live-mark" }, "Em execução") : null,
     ),
+    createElement("span", { className: "meta" }, moduleLabel(scenario.module)),
     createElement(
       "span",
       { className: provisional ? "status provisional" : "status", "data-status": scenario.status },
       provisional ? "Provisório" : STATUS_LABEL[scenario.status],
     ),
     createElement("span", { className: "scenario-time" }, formatDuration(scenarioDuration(scenario, now))),
-    live ? createElement("span", { className: "live-mark" }, "Em execução") : null,
+    createElement("span", { className: "mono scenario-cmd" }, scenario.command ?? "—"),
   );
 }
 

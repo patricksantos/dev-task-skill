@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import type { CatalogSuite, PrerequisiteCheck, RunView, SuiteId } from "@/types";
-import { STATUS_LABEL, formatDuration, formatWhen } from "@/components/format";
+import { SelectField } from "@/components/fields";
+import { STATUS_LABEL, formatDuration, formatPercent, formatWhen } from "@/components/format";
 import { HistoryMark, ProgressBar } from "@/components/panels";
+import { IconArrow } from "@/components/icons";
 import type { TimelineStep } from "@/components/view-model";
 
 type StatusName = keyof typeof STATUS_LABEL;
@@ -121,6 +123,7 @@ export function DevicePreview({
   error,
   caption,
   controls = true,
+  kind = "mobile",
   onCapture,
   onEnlarge,
   onAuto,
@@ -136,19 +139,21 @@ export function DevicePreview({
   error: string | null;
   caption?: string;
   controls?: boolean;
+  kind?: "mobile" | "web" | "hybrid";
   onCapture: () => void;
   onEnlarge: () => void;
   onAuto: (value: boolean) => void;
 }) {
+  const web = kind === "web";
   return (
     <section className="card" data-testid="simulator-card">
       <div className="card-head">
-        <h2>Dispositivo</h2>
+        <h2>{web ? "Navegador" : "Dispositivo de execução"}</h2>
         <span className={`tone tone-${connection.tone}`}>{connection.label}</span>
       </div>
       <div className="device-stage">
-        <div className="device-frame">
-          <button className="preview device-screen" type="button" disabled={!preview} onClick={onEnlarge}>
+        <div className={web ? "device-frame web" : "device-frame"}>
+          <button className={web ? "preview device-screen web-screen" : "preview device-screen"} type="button" disabled={!preview} onClick={onEnlarge}>
             {preview ? <img src={preview} alt={`Captura estática de ${name} em ${formatWhen(previewAt)}`} /> : (
               <span className="preview-empty">
                 <b>Sem captura</b>
@@ -168,10 +173,16 @@ export function DevicePreview({
       <div className="row">
         <button className="text" type="button" disabled={running} onClick={onCapture}>Capturar</button>
         <button className="text" type="button" disabled={!preview} onClick={onEnlarge}>Ampliar</button>
-        <label className="auto">
-          <input type="checkbox" checked={autoCapture} disabled={running} onChange={(event) => onAuto(event.target.checked)} />
-          Automática
-        </label>
+        <button
+          className={autoCapture ? "switch on" : "switch off"}
+          type="button"
+          role="switch"
+          aria-label="Captura automática"
+          aria-checked={autoCapture}
+          disabled={running}
+          onClick={() => onAuto(!autoCapture)}
+        />
+        <span className="muted">Automática</span>
       </div>
       ) : null}
       <p className="muted">{caption ?? (running ? "A captura fica desligada enquanto o Maestro controla o simulador. A última imagem continua visível." : "As imagens são capturas estáticas. Não há transmissão ao vivo, e a captura não disputa o simulador com o Maestro.")}</p>
@@ -211,19 +222,25 @@ export function TestSuiteSelector({
           disabled={blocked}
           onClick={() => onStart(suite.id, "script")}
         >
-          {suite.label}
+          {suite.id === "all" ? "Executar suíte" : `Executar ${suite.label.toLowerCase()}`}
         </button>
       ))}
       <button className="text danger" type="button" data-testid="stop-run" disabled={!running} onClick={onStop}>Interromper</button>
-      <label className="auto">
-        Demonstração
-        <select aria-label="Exemplo de demonstração" value={demoSuite} disabled={running || pending} onChange={(event) => onDemo(event.target.value as SuiteId)}>
-          <option value="smoke">Um reprovado</option>
-          <option value="stores">Todos aprovados</option>
-          <option value="coupons">Falha de infraestrutura</option>
-          <option value="navigation">Suíte sem testes</option>
-        </select>
-      </label>
+      <div className="auto demo-pick">
+        <span>Demonstração</span>
+        <SelectField
+          ariaLabel="Exemplo de demonstração"
+          value={demoSuite}
+          disabled={running || pending}
+          onChange={(value) => onDemo(value as SuiteId)}
+          options={[
+            { value: "smoke", label: "Um reprovado" },
+            { value: "stores", label: "Todos aprovados" },
+            { value: "coupons", label: "Falha de infraestrutura" },
+            { value: "navigation", label: "Suíte sem testes" },
+          ]}
+        />
+      </div>
       <button className="text" type="button" data-testid="run-fixture" title="Reproduz uma saída simulada, sem usar o simulador" disabled={running || pending} onClick={() => onStart(demoSuite, "fixture")}>Abrir</button>
     </section>
   );
@@ -256,6 +273,7 @@ export function ExecutionHistoryTable({
             <th>Duração</th>
             <th>Aprovados</th>
             <th>Reprovados</th>
+            <th>Sucesso</th>
             <th>Resultado</th>
             <th>Relatório</th>
           </tr>
@@ -263,22 +281,30 @@ export function ExecutionHistoryTable({
         <tbody>
           {rows.map((item) => (
             <tr key={item.id} className={item.mode === "fixture" ? "demo-row" : undefined} data-run-id={item.id}>
-              <td><button className="link" type="button" onClick={() => onOpen(item.id)}>{formatWhen(item.createdAt)}</button></td>
+              <td>
+                <button className="doc-link" type="button" onClick={() => onOpen(item.id)}>
+                  <IconArrow width={14} height={14} />
+                  {formatWhen(item.createdAt)}
+                </button>
+              </td>
               <td>{projectName}</td>
               <td>{item.suiteLabel}</td>
               <td>{item.simulatorName ?? "—"}</td>
               <td>{item.environment} · {item.apiLabel}</td>
               <td>{formatDuration(item.durationMs)}</td>
               <td>{item.passedCount}</td>
-              <td>{item.failedCount}</td>
+              <td className={item.failedCount ? "tone-bad" : undefined}>{item.failedCount}</td>
+              <td>{item.passedCount + item.failedCount > 0 && item.status !== "running" && item.status !== "aborted" ? formatPercent(item.passedCount, item.passedCount + item.failedCount) : "—"}</td>
               <td>
-                {item.mode === "fixture" ? <HistoryMark demo>{null}</HistoryMark> : <HistoryMark demo={false}>{null}</HistoryMark>}
-                <TestRunStatus status={item.status} />
+                <div className="result-cell">
+                  {item.mode === "fixture" ? <HistoryMark demo>{null}</HistoryMark> : <HistoryMark demo={false}>{null}</HistoryMark>}
+                  <TestRunStatus status={item.status} />
+                </div>
               </td>
               <td>{item.junitPath ? <a href={`/api/runs/${item.id}/report`}>JUnit</a> : "—"}</td>
             </tr>
           ))}
-          {!loading && rows.length === 0 ? <tr><td colSpan={10}>{empty}</td></tr> : null}
+          {!loading && rows.length === 0 ? <tr><td colSpan={11}>{empty}</td></tr> : null}
         </tbody>
       </table>
     </div>

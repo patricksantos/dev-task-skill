@@ -7,7 +7,7 @@
     "dev": "node server.mjs --dev",
     "build": "NEXT_DIST_DIR=.next-prod next build",
     "start": "NODE_ENV=production NEXT_DIST_DIR=.next-prod node server.mjs",
-    "test": "tsx --test src/config.test.ts src/sanitize/sanitize.test.ts src/parser/maestro-parser.test.ts src/junit/junit-report.test.ts src/catalog/catalog.test.ts src/prerequisites/prerequisites.test.ts src/runner/line-buffer.test.ts src/runner/reconcile.test.ts src/runner/fixtures.test.ts src/runner/run-manager.test.ts src/components/view-model.test.ts src/components/panels.test.ts",
+    "test": "tsx --test src/config.test.ts src/sanitize/sanitize.test.ts src/parser/maestro-parser.test.ts src/junit/junit-report.test.ts src/catalog/catalog.test.ts src/prerequisites/prerequisites.test.ts src/runner/line-buffer.test.ts src/runner/reconcile.test.ts src/runner/fixtures.test.ts src/runner/run-manager.test.ts src/projects/registry.test.ts src/projects/browse-directory.test.ts src/components/view-model.test.ts src/components/panels.test.ts src/components/fields.test.ts src/help/help.test.ts src/theme/theme.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -1,21 +1,14 @@
 import type { CatalogFlow, DashboardEvent, LogStream, LogView, PrerequisiteCheck, PrerequisiteReport, RunStatus, RunView, ScenarioStatus, ScenarioView } from "@/types";
 import { formatPercent } from "@/components/format";
+import { humanizeLabel } from "@/labels";
 
 const FINISHED: ScenarioStatus[] = ["passed", "failed", "skipped", "aborted"];
-
-const MODULE_LABELS: Record<string, string> = {
-  smoke: "Smoke",
-  stores: "Lojas",
-  coupons: "Cupons",
-  navigation: "Navegação",
-};
 
 export type FlowAvailability = "included" | "available" | "blocked";
 export type HistoryFilter = "all" | "real" | "demo";
 
 export function moduleLabel(moduleName: string | null): string {
-  if (!moduleName) return "—";
-  return MODULE_LABELS[moduleName] ?? moduleName;
+  return humanizeLabel(moduleName);
 }
 
 export function executionProgress(scenarios: ScenarioView[]) {
@@ -236,7 +229,7 @@ export function successLabel(status: RunStatus | null, scenarios: ScenarioView[]
 export function classifyFlow(
   flow: Pick<CatalogFlow, "name" | "module" | "suites">,
   checks: PrerequisiteCheck[] | null,
-  gateStores = true,
+  _gateStores = true,
 ): { availability: FlowAvailability; reason: string } {
   if (!flow.suites.includes("all")) {
     return { availability: "available", reason: "Disponível, mas não incluído na suíte completa." };
@@ -244,11 +237,6 @@ export function classifyFlow(
   const requiredDown = (checks ?? []).filter((check) => check.level === "required" && !check.ok);
   if (requiredDown.length > 0) {
     return { availability: "blocked", reason: "Bloqueado por pré-requisito obrigatório." };
-  }
-  const hml = checks?.find((check) => check.id === "hml");
-  const needsHml = gateStores && (flow.module === "stores" || flow.name === "home_to_stores");
-  if (needsHml && hml && !hml.ok) {
-    return { availability: "blocked", reason: "Bloqueado: a API de homologação não respondeu." };
   }
   return { availability: "included", reason: "Incluído na suíte completa." };
 }

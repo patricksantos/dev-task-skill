@@ -7,6 +7,7 @@ import type { AppConfig } from "@/config";
 import { RunStore } from "@/db/database";
 import { EventHub } from "@/events/event-hub";
 import { RequestError } from "@/errors";
+import type { ProjectRegistry } from "@/projects/registry";
 import { JunitParseError, sanitizeJunitDocument, type ParsedJunit } from "@/junit/junit-report";
 import { applyMaestroLine } from "@/parser/maestro-parser";
 import { checkPrerequisites } from "@/prerequisites/prerequisites";
@@ -35,6 +36,7 @@ type SpawnImpl = (
 export interface RunManagerOptions {
   config: AppConfig;
   store?: RunStore;
+  registry?: ProjectRegistry;
   fixtureStepMs?: number;
   checkPrerequisites?: typeof checkPrerequisites;
   spawnImpl?: SpawnImpl;
@@ -113,7 +115,42 @@ export class RunManager {
 
   constructor(private readonly options: RunManagerOptions) {
     this.store = options.store ?? new RunStore(options.config.dataDir);
+    this.options.registry?.syncFromConfig(this.options.config);
+    this.applyWorkspaceConfig();
     this.recoverOrphans();
+  }
+
+  get config(): AppConfig {
+    return this.options.config;
+  }
+
+  get registry(): ProjectRegistry | undefined {
+    return this.options.registry;
+  }
+
+  applyWorkspaceConfig(): void {
+    const workspace = this.options.registry?.workspace();
+    const project = workspace?.activeProject;
+    if (!project) return;
+    const profile = resolveProject(project.repositoryPath);
+    const environment = workspace?.activeEnvironment;
+    this.options.config = {
+      ...this.options.config,
+      repoRoot: project.repositoryPath,
+      projectName: project.name,
+      appId: profile.appId,
+      environmentLabel: environment?.label ?? profile.environmentLabel,
+      apiLabel: environment?.apiLabel ?? profile.apiLabel,
+      apiUrl: environment?.apiUrl ?? profile.apiUrl,
+    };
+  }
+
+  selectProject(projectId: string, environmentId?: string | null): ReturnType<ProjectRegistry["workspace"]> {
+    if (!this.options.registry) throw new RequestError(500, "Falha interna do dashboard.");
+    if (this.busy) throw new RequestError(409, "Há uma suíte em execução. Aguarde o término para trocar de projeto.");
+    const workspace = this.options.registry.select(projectId, environmentId);
+    this.applyWorkspaceConfig();
+    return workspace;
   }
 
   get busy(): boolean {
@@ -137,7 +174,9 @@ export class RunManager {
   }
 
   listRuns(limit = 30): RunView[] {
-    return this.store.listRuns(limit);
+    const projectId = this.options.registry?.workspace().activeProjectId ?? null;
+    if (this.options.registry && !projectId) return this.store.listRuns(limit);
+    return this.store.listRuns(limit, projectId);
   }
 
   details(id: string): { run: RunView; scenarios: ScenarioView[]; logs: LogView[] } | null {
@@ -236,6 +275,7 @@ export class RunManager {
   private createView(suite: string, label: string, mode: RunMode, total: number, now: string): RunView {
     return {
       id: randomUUID(),
+      projectId: this.options.registry?.workspace().activeProjectId ?? null,
       createdAt: now,
       startedAt: now,
       finishedAt: null,
@@ -510,7 +550,9 @@ export class RunManager {
   private currentRun(): RunView | null {
     if (this.active) return withoutPid(this.active.view);
     if (this.orphan) return this.publicRun(this.orphan.runId);
-    const latest = this.store.latestRun();
+    const projectId = this.options.registry?.workspace().activeProjectId ?? null;
+    if (this.options.registry && !projectId) return null;
+    const latest = this.store.latestRun(projectId);
     return latest ? withoutPid(latest) : null;
   }
 

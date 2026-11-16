@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CatalogReport, DashboardEvent, LogStream, LogView, PrerequisiteReport, RunView, ScenarioView, SuiteId } from "@/types";
+import type { ProjectDiscovery, WorkspaceState } from "@/projects/types";
 import { elapsedMs } from "@/components/format";
 import { DashboardPages } from "@/components/dashboard-pages";
 import {
@@ -30,7 +31,7 @@ interface Details {
 }
 
 const STATUS_FILTERS = ["all", "pending", "running", "passed", "failed", "skipped", "aborted"] as const;
-type PageId = "overview" | "executions" | "history" | "settings" | "details";
+type PageId = "overview" | "executions" | "history" | "projects" | "settings" | "details" | "help";
 
 async function readError(response: Response): Promise<string> {
   const body = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -63,7 +64,17 @@ export function Dashboard() {
   const [autoCapture, setAutoCapture] = useState(false);
   const [enlarge, setEnlarge] = useState(false);
   const [inspection, setInspection] = useState<Details | null>(null);
-  const [page, setPage] = useState<PageId>("executions");
+  const [page, setPage] = useState<PageId>("overview");
+  const [workspace, setWorkspace] = useState<WorkspaceState | null>(null);
+  const [discovery, setDiscovery] = useState<ProjectDiscovery | null>(null);
+  const [confirm, setConfirm] = useState<{ suite: SuiteId; mode: "script" | "fixture" } | null>(null);
+  const [scenarioQuery, setScenarioQuery] = useState("");
+  const [scenarioPage, setScenarioPage] = useState(1);
+  const [historySuite, setHistorySuite] = useState("all");
+  const [historyResult, setHistoryResult] = useState("all");
+  const [historyQuery, setHistoryQuery] = useState("");
+  const [historyPage, setHistoryPage] = useState(1);
+  const [helpTopic, setHelpTopic] = useState("introducao");
   const [stepKey, setStepKey] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const logEnd = useRef<HTMLDivElement | null>(null);
@@ -75,6 +86,58 @@ export function Dashboard() {
 
   const running = run?.status === "running";
   runningRef.current = running;
+
+  useEffect(() => {
+    const help = new URLSearchParams(window.location.search).get("help");
+    if (help) {
+      setPage("help");
+      setHelpTopic(help === "home" ? "introducao" : help);
+    }
+  }, []);
+
+  const reloadProjectData = useCallback(() => {
+    void fetch("/api/projects", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(await readError(response));
+        const body = (await response.json()) as WorkspaceState & { discovery: ProjectDiscovery | null };
+        setWorkspace(body);
+        setDiscovery(body.discovery);
+      })
+      .catch(() => {
+        setWorkspace({
+          projects: [],
+          environments: [],
+          activeProjectId: null,
+          activeEnvironmentId: null,
+          activeProject: null,
+          activeEnvironment: null,
+        });
+      });
+    void fetch("/api/catalog", { cache: "no-store" })
+      .then(async (response) => {
+        const body = (await response.json()) as CatalogReport & { error?: string };
+        if (!response.ok || !Array.isArray(body.suites) || !Array.isArray(body.modules)) {
+          setCatalog({ modules: [], suites: [], error: body.error ?? "Catálogo indisponível." });
+          return;
+        }
+        setCatalog({ modules: body.modules, suites: body.suites, error: body.error ?? null });
+      })
+      .catch(() => setCatalog({ modules: [], suites: [], error: "Catálogo indisponível." }));
+    void refreshHistory().then(setHistory).catch(() => setHistory([]));
+    void fetch("/api/prerequisites", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(await readError(response));
+        setPrereq((await response.json()) as PrerequisiteReport);
+        setPrereqError(null);
+      })
+      .catch((reason: unknown) => setPrereqError(reason instanceof Error ? reason.message : "Falha ao verificar pré-requisitos."));
+  }, []);
+
+  useEffect(() => {
+    reloadProjectData();
+    const timer = setInterval(reloadProjectData, 20000);
+    return () => clearInterval(timer);
+  }, [reloadProjectData]);
 
   useEffect(() => {
     const source = new EventSource("/api/events");
@@ -94,29 +157,6 @@ export function Dashboard() {
       }
     };
     return () => source.close();
-  }, []);
-
-  useEffect(() => {
-    const load = () => {
-      void fetch("/api/prerequisites")
-        .then(async (response) => {
-          if (!response.ok) throw new Error(await readError(response));
-          setPrereq((await response.json()) as PrerequisiteReport);
-          setPrereqError(null);
-        })
-        .catch((reason: unknown) => setPrereqError(reason instanceof Error ? reason.message : "Falha ao verificar pré-requisitos."));
-    };
-    load();
-    const timer = setInterval(load, 20000);
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    void fetch("/api/catalog")
-      .then((response) => response.json())
-      .then((body: CatalogReport) => setCatalog(body))
-      .catch(() => setCatalog({ modules: [], suites: [], error: "Catálogo indisponível." }));
-    void refreshHistory().then(setHistory).catch(() => setHistory([]));
   }, []);
 
   useEffect(() => {
@@ -255,6 +295,37 @@ export function Dashboard() {
     if (!response.ok) setError(await readError(response));
   }
 
+  async function selectProject(projectId: string, environmentId?: string | null) {
+    if (!projectId) return;
+    const response = await fetch(`/api/projects/${projectId}/select`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(environmentId ? { environmentId } : {}),
+    });
+    if (!response.ok) {
+      setError(await readError(response));
+      return;
+    }
+    setModuleFilter("all");
+    setScenarioPage(1);
+    setHistoryPage(1);
+    await reloadProjectData();
+  }
+
+  async function createProject(input: { name: string; description: string; type: "mobile" | "web" | "hybrid"; repositoryPath: string }) {
+    const response = await fetch("/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      setError(await readError(response));
+      return;
+    }
+    await reloadProjectData();
+    setPage("projects");
+  }
+
   async function openRun(id: string) {
     const response = await fetch(`/api/runs/${id}`);
     if (!response.ok) {
@@ -334,6 +405,26 @@ export function Dashboard() {
       stop={() => void stop()}
       openRun={(id) => void openRun(id)}
       capture={() => void capture()}
+      workspace={workspace}
+      discovery={discovery}
+      selectProject={(projectId, environmentId) => void selectProject(projectId, environmentId)}
+      createProject={(input) => void createProject(input)}
+      confirm={confirm}
+      setConfirm={setConfirm}
+      scenarioQuery={scenarioQuery}
+      setScenarioQuery={setScenarioQuery}
+      scenarioPage={scenarioPage}
+      setScenarioPage={setScenarioPage}
+      historySuite={historySuite}
+      setHistorySuite={setHistorySuite}
+      historyResult={historyResult}
+      setHistoryResult={setHistoryResult}
+      historyQuery={historyQuery}
+      setHistoryQuery={setHistoryQuery}
+      historyPage={historyPage}
+      setHistoryPage={setHistoryPage}
+      helpTopic={helpTopic}
+      setHelpTopic={setHelpTopic}
     />
   );
 }

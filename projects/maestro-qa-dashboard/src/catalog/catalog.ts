@@ -1,16 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
+import { humanizeLabel } from "@/labels";
 import { resolveProject } from "@/project";
 import type { CatalogFlow, CatalogModule, CatalogReport } from "@/types";
 
 const FLOW_PATTERN = /\.maestro\/flows\/[A-Za-z0-9_./-]+\.yaml/g;
-const MODULE_LABELS: Record<string, string> = {
-  smoke: "Smoke",
-  stores: "Lojas",
-  coupons: "Cupons",
-  navigation: "Navegação",
-};
-const MODULE_ORDER = ["smoke", "stores", "coupons", "navigation"];
 
 export interface PlannedFlow {
   name: string;
@@ -127,7 +121,7 @@ export function plannedFlowsForSuite(repoRoot: string, suite: string): PlannedFl
 }
 
 function moduleLabel(moduleName: string): string {
-  return MODULE_LABELS[moduleName] ?? moduleName;
+  return humanizeLabel(moduleName);
 }
 
 export function readCatalog(repoRoot: string): CatalogReport {
@@ -197,13 +191,7 @@ export function readCatalog(repoRoot: string): CatalogReport {
   }
 
   const modules: CatalogModule[] = [...grouped.entries()]
-    .sort((left, right) => {
-      const leftIndex = MODULE_ORDER.indexOf(left[0]);
-      const rightIndex = MODULE_ORDER.indexOf(right[0]);
-      const normalizedLeft = leftIndex === -1 ? 99 : leftIndex;
-      const normalizedRight = rightIndex === -1 ? 99 : rightIndex;
-      return normalizedLeft - normalizedRight || left[0].localeCompare(right[0]);
-    })
+    .sort((left, right) => left[0].localeCompare(right[0]))
     .map(([id, flows]) => ({
       id,
       label: moduleLabel(id),

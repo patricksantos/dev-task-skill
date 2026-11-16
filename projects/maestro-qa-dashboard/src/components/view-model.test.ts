@@ -99,8 +99,8 @@ test("o catálogo separa a suíte completa, o que fica de fora e o bloqueio de p
   assert.equal(classifyFlow({ name: "category_tabs", module: "coupons", suites: ["coupons"] }, checks(true)).availability, "available");
   assert.equal(classifyFlow({ name: "home", module: "smoke", suites: ["smoke", "all"] }, checks(false)).availability, "included");
   assert.equal(classifyFlow({ name: "home", module: "smoke", suites: ["smoke", "all"] }, checks(true)).reason, "Incluído na suíte completa.");
-  assert.equal(classifyFlow({ name: "listing", module: "stores", suites: ["stores", "all"] }, checks(false)).availability, "blocked");
-  assert.equal(classifyFlow({ name: "home_to_stores", module: "smoke", suites: ["smoke", "all"] }, checks(false)).availability, "blocked");
+  assert.equal(classifyFlow({ name: "listing", module: "stores", suites: ["stores", "all"] }, checks(false)).availability, "included");
+  assert.equal(classifyFlow({ name: "home_to_stores", module: "smoke", suites: ["smoke", "all"] }, checks(false)).availability, "included");
   assert.equal(classifyFlow({ name: "home", module: "smoke", suites: ["smoke", "all"] }, checks(true, false)).availability, "blocked");
   assert.equal(prereqSummary(null).label, "Verificando");
   assert.equal(runnerLabel(null, false).label, "Pronto");
